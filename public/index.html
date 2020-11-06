@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="username-wrap">
+      <h1 id="app-title">OPENCHAT</h1>
+      <div id="name-wrap">
+        <h1>USERNAME</h1>
+        <input type="text" id="username" />
+      </div>
+      <div id="color-wrap">
+        <h1>COLOR</h1>
+        <input type="color" id="color-pick" value="#f08080" />
+      </div>
+      <div id="submit-wrap">
+        <input type="submit" id="submit-name" value="submit" />
+      </div>
+    </div>
+    <div id="chatbox-overlay">
+      <div id="online-wrapper">
+        <span id="online-title">Online</span>
+      </div>
+      <ul id="chatbox"></ul>
+      <input type="text" id="message-box" />
+      <input type="submit" id="submit-msg" value="send" />
+    </div>
+  </body>
+
+  <script>
+    const HOST = location.origin.replace(/^http/, 'ws');
+    const ws = new WebSocket(HOST);
+
+    const nameSubmit = document.getElementById('submit-name');
+    const chatboxOverlay = document.getElementById('chatbox-overlay');
+    const onlineWrap = document.getElementById('online-wrapper');
+    const chatbox = chatboxOverlay.children[1];
+    const messageInput = chatboxOverlay.children[2];
+    const messageButton = chatboxOverlay.children[3];
+
+    //client needs to keep track of name/color for sending messages to server
+    let clientUsername = '';
+    let clientCol = '';
+
+    nameSubmit.addEventListener('click', (e) => {
+      const username = document.getElementById('username').value;
+
+      if (username) {
+        if (username.length > 8) {
+          alert('username must be 8 characters or under');
+          return;
+        }
+
+        const userCol = document.getElementById('color-pick').value;
+
+        clientUsername = username;
+        clientCol = userCol;
+
+        const usernameJSON = {
+          type: 'username',
+          value: username,
+          color: userCol,
+        };
+        ws.send(JSON.stringify(usernameJSON));
+
+        e.target.parentElement.parentElement.style.display = 'none';
+        chatboxOverlay.style.visibility = 'visible';
+      }
+    });
+
+    messageButton.addEventListener('click', () => {
+      //send message to server and add to message box
+      //TODO: add enter button submit
+      if (messageInput.value) {
+        const msgJSON = {
+          type: 'message',
+          value: messageInput.value,
+          username: clientUsername,
+          color: clientCol,
+        };
+        ws.send(JSON.stringify(msgJSON));
+
+        addMessage(chatbox, clientUsername, clientCol, messageInput.value);
+
+        messageInput.value = '';
+      }
+    });
+
+    ws.onmessage = (e) => {
+      const serverMsg = JSON.parse(e.data);
+      if (serverMsg.type === 'username') {
+        const newUser = document.createElement('li');
+        newUser.className = 'connection';
+        newUser.textContent = `${serverMsg.value} has entered the chatroom.`;
+        chatbox.appendChild(newUser);
+
+        renderCircles(serverMsg.clientList);
+      } else if (serverMsg.type === 'disconnect') {
+        console.log(serverMsg);
+        const disconnect = document.createElement('li');
+        disconnect.className = 'connection';
+        disconnect.textContent = `${serverMsg.value} has left the chatroom.`;
+        chatbox.appendChild(disconnect);
+
+        renderCircles(serverMsg.clientList);
+      } else if (serverMsg.type === 'message') {
+        addMessage(
+          chatbox,
+          serverMsg.username,
+          serverMsg.color,
+          serverMsg.value
+        );
+      }
+    };
+
+    function renderCircles(clientList) {
+      //remove circles (all but first children)
+      for (let i = 0; i < onlineWrap.childElementCount; i++) {
+        onlineWrap.removeChild(onlineWrap.lastChild);
+      }
+
+      //create circles according to serverMsg.clientList
+      for (let i = 0; i < clientList.length; i++) {
+        const circle = document.createElement('div');
+        circle.className = 'online-circle';
+        circle.style.backgroundColor = clientList[i].color;
+        onlineWrap.appendChild(circle);
+      }
+    }
+
+    function addMessage(chatbox, userVal, userCol, msgVal) {
+      const message = document.createElement('li');
+
+      const circle = document.createElement('div');
+      circle.id = 'user-circle';
+      circle.style.backgroundColor = userCol;
+
+      const user = document.createElement('span');
+      user.id = 'msg-user';
+      user.textContent = userVal;
+
+      const seperator = document.createElement('span');
+      seperator.id = 'seperator';
+      seperator.textContent = '>';
+
+      const messageVal = document.createElement('span');
+      messageVal.id = 'msg-value';
+      messageVal.textContent = msgVal;
+      messageVal.style.backgroundColor = userCol;
+
+      //adjust font color incase of conflict with user color
+      const fontCol = fontColor(userCol);
+      messageVal.style.color = fontCol;
+
+      message.appendChild(circle);
+      message.appendChild(user);
+      message.appendChild(seperator);
+      message.appendChild(messageVal);
+
+      chatbox.appendChild(message);
+    }
+
+    function hexToRGB(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      const rgb = [3];
+      rgb[0] = parseInt(result[1], 16);
+      rgb[1] = parseInt(result[2], 16);
+      rgb[2] = parseInt(result[3], 16);
+      return rgb;
+    }
+
+    //if user chooses dark color change font color to white
+    function fontColor(userCol) {
+      //convert col to rgb
+      const colRGB = hexToRGB(userCol);
+
+      const brightness = Math.round(
+        (colRGB[0] * 299 + colRGB[1] * 587 + colRGB[2] * 114) / 1000
+      );
+      const textColor = brightness > 125 ? 'black' : 'white';
+      return textColor;
+    }
+  </script>
+</html>
