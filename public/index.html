@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
-    <title>Document</title>
+    <title>Chat App</title>
   </head>
   <body>
     <div id="username-wrap">
@@ -37,10 +37,6 @@
 
     const nameSubmit = document.getElementById('submit-name');
     const chatboxOverlay = document.getElementById('chatbox-overlay');
-    const onlineWrap = document.getElementById('online-wrapper');
-    const chatbox = chatboxOverlay.children[1];
-    const messageInput = chatboxOverlay.children[2];
-    const messageButton = chatboxOverlay.children[3];
 
     //client needs to keep track of name/color for sending messages to server
     let clientUsername = '';
@@ -72,8 +68,11 @@
       }
     });
 
+    const chatbox = chatboxOverlay.children[1];
+    const messageButton = chatboxOverlay.children[3];
+
     messageButton.addEventListener('click', () => {
-      //send message to server and add to message box
+      const messageInput = chatboxOverlay.children[2];
       //TODO: add enter button submit
       if (messageInput.value) {
         const msgJSON = {
@@ -97,14 +96,15 @@
         newUser.className = 'connection';
         newUser.textContent = `${serverMsg.value} has entered the chatroom.`;
         chatbox.appendChild(newUser);
+        chatbox.scrollTop = 9999999;
 
         renderCircles(serverMsg.clientList);
       } else if (serverMsg.type === 'disconnect') {
-        console.log(serverMsg);
         const disconnect = document.createElement('li');
         disconnect.className = 'connection';
         disconnect.textContent = `${serverMsg.value} has left the chatroom.`;
         chatbox.appendChild(disconnect);
+        chatbox.scrollTop = 9999999;
 
         renderCircles(serverMsg.clientList);
       } else if (serverMsg.type === 'message') {
@@ -118,6 +118,8 @@
     };
 
     function renderCircles(clientList) {
+      const onlineWrap = document.getElementById('online-wrapper');
+
       //remove circles (all but first children)
       for (let i = 0; i < onlineWrap.childElementCount; i++) {
         onlineWrap.removeChild(onlineWrap.lastChild);
@@ -162,6 +164,7 @@
       message.appendChild(messageVal);
 
       chatbox.appendChild(message);
+      chatbox.scrollTop = 9999999;
     }
 
     function hexToRGB(hex) {

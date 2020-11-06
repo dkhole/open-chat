@@ -24,7 +24,7 @@ body {
   padding-top: 100px;
   position: absolute;
   top: 0;
-  left: 50%;
+  left: 0;
   text-align: center;
 }
 
@@ -99,6 +99,18 @@ h1 {
   border-radius: 10px;
   padding: 20px 0 20px 0;
   list-style: none;
+  overflow: auto;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+#chatbox::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.example {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 #message-box {

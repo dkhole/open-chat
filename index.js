@@ -1,6 +1,5 @@
 const express = require('express');
 const WebSocket = require('ws');
-const { v4: uuidv4 } = require('uuid');
 
 const PORT = process.env.PORT || 3000;
 const INDEX = '/index.html';
@@ -11,25 +10,26 @@ const server = express()
 
 const wss = new WebSocket.Server({ server });
 
+//TODO: change to map
 let clients = [];
 
 wss.on('connection', (ws, req) => {
   console.log('client connected');
-  //send list of clients
+
+  //TODO: send list of clients to check if username is unique
 
   ws.on('message', (data) => {
     const dataJSON = JSON.parse(data);
-    //if username broadcast new user to clients
+
     if (dataJSON.type === 'username') {
       clients.push({
         client: ws,
         username: dataJSON.value,
         color: dataJSON.color,
       });
-      const sendData = JSON.stringify({ ...dataJSON, clientList: clients });
-      broadcast(ws, sendData);
+
+      broadcast(JSON.stringify({ ...dataJSON, clientList: clients }));
     } else if (dataJSON.type === 'message') {
-      //if recieve message broadcast same message
       broadcastExceptSelf(ws, data);
     }
   });
@@ -39,12 +39,10 @@ wss.on('connection', (ws, req) => {
     let removeIndex = -1;
     let clientName = '';
 
+    //get username
     for (let i = 0; i < clients.length; i++) {
       if (clients[i].client === ws) {
-        //broadcase user has logged out
         clientName = clients[i].username;
-
-        // remove from clients
         removeIndex = i;
         break;
       }
@@ -72,7 +70,7 @@ function broadcastExceptSelf(ws, sendMsg) {
   });
 }
 
-function broadcast(ws, sendMsg) {
+function broadcast(sendMsg) {
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
       client.send(sendMsg);
